@@ -1,0 +1,30 @@
+
+> high-end-web-des@0.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+Error: Cannot apply unknown utility class `shadow-[0_10px_40px_rgba(0,`
+    at onInvalidCandidate (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:21:1511)
+    at Te (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:16:36326)
+    at A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:21:355
+    at Rr (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:3:1718)
+    at _ (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:3:1377)
+    at $e (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:21:172)
+    at un (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:38:294)
+    at async cn (A:\Repos\WEB DES\node_modules\tailwindcss\dist\lib.js:38:631)
+    at async Xr (A:\Repos\WEB DES\node_modules\@tailwindcss\node\dist\index.js:10:3417)
+    at async I (A:\Repos\WEB DES\node_modules\@tailwindcss\postcss\dist\index.js:10:3977)
+[32m✓[39m 28 modules transformed.
+[31mx[39m Build failed in 1.06s
+[31merror during build:
+[31m[vite:css] [postcss] tailwindcss: A:/Repos/WEB DES/src/index.css:1:1: Cannot apply unknown utility class `shadow-[0_10px_40px_rgba(0,`[31m
+file: [36mA:/Repos/WEB DES/src/index.css:1:0[31m
+    at Input.error (A:\Repos\WEB DES\node_modules\postcss\lib\input.js:135:16)
+    at Root.error (A:\Repos\WEB DES\node_modules\postcss\lib\node.js:146:32)
+    at Object.Once (A:\Repos\WEB DES\node_modules\@tailwindcss\postcss\dist\index.js:10:6911)
+    at async LazyResult.runAsync (A:\Repos\WEB DES\node_modules\postcss\lib\lazy-result.js:293:11)
+    at async compileCSS (file:///A:/Repos/WEB%20DES/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:36898:21)
+    at async Object.transform (file:///A:/Repos/WEB%20DES/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:36171:11)
+    at async transform (file:///A:/Repos/WEB%20DES/node_modules/rollup/dist/es/shared/node-entry.js:21246:16)
+    at async ModuleLoader.addModuleSource (file:///A:/Repos/WEB%20DES/node_modules/rollup/dist/es/shared/node-entry.js:21474:36)[39m
