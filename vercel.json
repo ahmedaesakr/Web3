@@ -2,5 +2,25 @@
     "framework": "vite",
     "installCommand": "npm install && chmod -R +x node_modules/.bin",
     "buildCommand": "npm run build",
-    "outputDirectory": "dist"
+    "outputDirectory": "dist",
+    "headers": [
+        {
+            "source": "/sequence/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        },
+        {
+            "source": "/assets/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        }
+    ]
 }

@@ -4,18 +4,47 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const ScrollSequence = ({ frameCount, children }) => {
+// Configuration — tune these for performance vs quality
+const PRIORITY_FRAMES = 15;    // Load first N frames immediately (above the fold)
+const BATCH_SIZE = 8;          // Frames per lazy-load batch
+const FRAME_STEP = 2;          // Skip every Nth frame (2 = use every other frame)
+
+const ScrollSequence = ({ frameCount = 285, children }) => {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const contextRef = useRef(null);
     const contentRef = useRef(null);
-    const imagesRef = useRef([]);
+    const imagesRef = useRef(new Map());
     const currentFrameRef = useRef(0);
     const [loadProgress, setLoadProgress] = useState(0);
-    const [imagesLoaded, setImagesLoaded] = useState(false);
+    const [initialReady, setInitialReady] = useState(false);
 
-    const renderFrame = useCallback((index) => {
-        const img = imagesRef.current[index];
+    // Build the reduced frame index list (every FRAME_STEP-th frame)
+    const frameIndices = useRef([]);
+    if (frameIndices.current.length === 0) {
+        for (let i = 0; i < frameCount; i += FRAME_STEP) {
+            frameIndices.current.push(i);
+        }
+        // Always include the very last frame for smooth ending
+        const lastFrame = frameCount - 1;
+        if (!frameIndices.current.includes(lastFrame)) {
+            frameIndices.current.push(lastFrame);
+        }
+    }
+
+    const totalOptimizedFrames = frameIndices.current.length;
+
+    // Map a scroll progress (0–1) to the nearest available frame index
+    const getFrameForProgress = useCallback((progress) => {
+        const targetIdx = Math.min(
+            totalOptimizedFrames - 1,
+            Math.floor(progress * totalOptimizedFrames)
+        );
+        return frameIndices.current[targetIdx];
+    }, [totalOptimizedFrames]);
+
+    const renderFrame = useCallback((originalIndex) => {
+        const img = imagesRef.current.get(originalIndex);
         const canvas = canvasRef.current;
         const context = contextRef.current;
 
@@ -41,66 +70,92 @@ const ScrollSequence = ({ frameCount, children }) => {
         }
     }, []);
 
+    // Load a single image and return a promise
+    const loadImage = useCallback((originalIndex) => {
+        return new Promise((resolve) => {
+            if (imagesRef.current.has(originalIndex)) {
+                resolve(imagesRef.current.get(originalIndex));
+                return;
+            }
+
+            const img = new Image();
+            // Use decoding="async" for non-blocking decode
+            img.decoding = 'async';
+            img.src = `/sequence/frame_${String(originalIndex).padStart(4, '0')}.webp`;
+            img.onload = () => {
+                imagesRef.current.set(originalIndex, img);
+                resolve(img);
+            };
+            img.onerror = () => {
+                console.error(`Failed to load frame ${originalIndex}`);
+                resolve(null);
+            };
+        });
+    }, []);
+
+    // Phase 1: Load priority frames (first N) immediately
     useEffect(() => {
         let isMounted = true;
-        const batchSize = 10;
-        let loadedCount = 0;
 
-        const loadBatch = async (startIndex) => {
-            if (!isMounted) return;
-
-            const endIndex = Math.min(startIndex + batchSize, frameCount);
-            const promises = [];
-
-            for (let i = startIndex; i < endIndex; i++) {
-                if (imagesRef.current[i]) continue;
-
-                const promise = new Promise((resolve) => {
-                    const img = new Image();
-                    img.src = `/sequence/frame_${String(i).padStart(4, '0')}.webp`;
-                    img.onload = () => {
-                        loadedCount++;
-                        if (isMounted) setLoadProgress(Math.round((loadedCount / frameCount) * 100));
-                        resolve(img);
-                    };
-                    img.onerror = () => {
-                        console.error(`Failed to load frame ${i}`);
-                        resolve(null);
-                    };
-                    imagesRef.current[i] = img;
-                });
-                promises.push(promise);
-            }
-
+        const loadPriorityFrames = async () => {
+            const priorityIndices = frameIndices.current.slice(0, PRIORITY_FRAMES);
+            const promises = priorityIndices.map(idx => loadImage(idx));
             await Promise.all(promises);
 
-            if (startIndex === 0 && isMounted) {
-                renderFrame(0);
-            }
-
-            if (endIndex < frameCount && isMounted) {
-                requestAnimationFrame(() => loadBatch(endIndex));
-            } else if (isMounted) {
-                setImagesLoaded(true);
+            if (isMounted) {
+                setInitialReady(true);
+                setLoadProgress(Math.round((PRIORITY_FRAMES / totalOptimizedFrames) * 100));
+                renderFrame(frameIndices.current[0]);
             }
         };
 
-        loadBatch(0);
+        loadPriorityFrames();
 
-        return () => {
-            isMounted = false;
+        return () => { isMounted = false; };
+    }, [loadImage, renderFrame, totalOptimizedFrames]);
+
+    // Phase 2: Lazy-load remaining frames in batches after priority frames are ready
+    useEffect(() => {
+        if (!initialReady) return;
+        let isMounted = true;
+
+        const loadRemaining = async () => {
+            const remaining = frameIndices.current.slice(PRIORITY_FRAMES);
+            let loadedSoFar = PRIORITY_FRAMES;
+
+            for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
+                if (!isMounted) break;
+
+                const batch = remaining.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(idx => loadImage(idx)));
+
+                loadedSoFar += batch.length;
+                if (isMounted) {
+                    setLoadProgress(Math.round((loadedSoFar / totalOptimizedFrames) * 100));
+                }
+
+                // Yield to main thread between batches to keep UI responsive
+                await new Promise(r => requestAnimationFrame(r));
+            }
         };
-    }, [frameCount, renderFrame]);
 
+        loadRemaining();
+
+        return () => { isMounted = false; };
+    }, [initialReady, loadImage, totalOptimizedFrames]);
+
+    // Canvas setup + GSAP ScrollTrigger
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        contextRef.current = canvas.getContext('2d');
+        contextRef.current = canvas.getContext('2d', { alpha: false });
 
         const updateSize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // Use devicePixelRatio for sharp rendering but cap at 1.5x for performance
+            const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
             renderFrame(currentFrameRef.current);
         };
 
@@ -114,18 +169,19 @@ const ScrollSequence = ({ frameCount, children }) => {
             scrub: 0,
             pin: true,
             onUpdate: (self) => {
-                const frameIndex = Math.min(
-                    frameCount - 1,
-                    Math.floor(self.progress * (frameCount - 1))
-                );
+                const frameIndex = getFrameForProgress(self.progress);
+
                 if (frameIndex !== currentFrameRef.current) {
-                    currentFrameRef.current = frameIndex;
-                    renderFrame(frameIndex);
+                    // Only render if the image is loaded
+                    if (imagesRef.current.has(frameIndex)) {
+                        currentFrameRef.current = frameIndex;
+                        renderFrame(frameIndex);
+                    }
                 }
 
-                // Optimize content fade out based on scroll progress
+                // Content fade out based on scroll progress
                 if (contentRef.current) {
-                    const opacity = Math.max(0, 1 - self.progress * 5); // Fade out quickly
+                    const opacity = Math.max(0, 1 - self.progress * 5);
                     gsap.set(contentRef.current, { opacity, pointerEvents: opacity > 0.1 ? 'auto' : 'none' });
                 }
             }
@@ -135,7 +191,9 @@ const ScrollSequence = ({ frameCount, children }) => {
             window.removeEventListener('resize', updateSize);
             if (trigger) trigger.kill();
         };
-    }, [frameCount, renderFrame]);
+    }, [renderFrame, getFrameForProgress]);
+
+    const isFullyLoaded = loadProgress >= 100;
 
     return (
         <div
@@ -149,7 +207,8 @@ const ScrollSequence = ({ frameCount, children }) => {
                 background: '#000'
             }}
         >
-            {!imagesLoaded && loadProgress < 100 && (
+            {/* Loading indicator — shows until priority frames are loaded */}
+            {!initialReady && (
                 <div style={{
                     position: 'absolute',
                     inset: 0,
@@ -168,6 +227,21 @@ const ScrollSequence = ({ frameCount, children }) => {
                         BUFFERING SEQUENCE: {loadProgress}%
                     </div>
                 </div>
+            )}
+
+            {/* Subtle background progress for remaining frames */}
+            {initialReady && !isFullyLoaded && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: `${loadProgress}%`,
+                    height: '2px',
+                    background: 'var(--accent-blue)',
+                    opacity: 0.4,
+                    transition: 'width 0.3s ease',
+                    zIndex: 30
+                }} />
             )}
 
             <canvas
