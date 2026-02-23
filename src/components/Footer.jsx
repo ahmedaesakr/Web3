@@ -7,7 +7,7 @@ const Footer = () => {
             className="pt-40 pb-20 px-5 md:px-10 bg-bg-deep text-white/80 text-center border-t border-white/5"
         >
             <div className="max-w-7xl mx-auto">
-                <h2 className="text-[clamp(3rem,15vw,15rem)] font-display leading-[0.8] tracking-[-0.05em] text-white my-8">
+                <h2 className="text-[clamp(3rem,12vw,12rem)] font-display leading-[0.8] tracking-[-0.05em] text-white my-8 w-full overflow-hidden text-ellipsis">
                     LUMINA
                 </h2>
 
