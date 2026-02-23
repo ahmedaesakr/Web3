@@ -33,7 +33,7 @@ const AboutSection = () => {
         );
     }, []);
 
-    const text = "Designing the future of digital interaction. We create immersive experiences that defy gravity and accelerate perception.";
+    const text = "Crafting visual masterpieces and immersive digital art. We blend aesthetic design with technology to create unique studio experiences.";
     const words = text.split(" ");
 
     return (
