@@ -8,7 +8,7 @@ const Footer = () => {
         >
             <div className="max-w-7xl mx-auto">
                 <h2 className="text-[clamp(3rem,15vw,15rem)] font-display leading-[0.8] tracking-[-0.05em] text-white my-8">
-                    HYPER
+                    LUMINA
                 </h2>
 
                 <div className="flex flex-wrap justify-between gap-10 mt-20 text-left">
@@ -23,7 +23,7 @@ const Footer = () => {
 
                     <div>
                         <p className="font-body font-semibold text-white mb-4">CONTACT</p>
-                        <p className="text-white/50 hover:text-white transition-colors cursor-pointer">hello@hypersonic.dev</p>
+                        <p className="text-white/50 hover:text-white transition-colors cursor-pointer">hello@luminastudio.dev</p>
                     </div>
 
                     <div>
@@ -33,7 +33,7 @@ const Footer = () => {
                 </div>
 
                 <div className="mt-20 flex justify-between text-xs text-white/30 uppercase tracking-widest font-body">
-                    <p>© 2026 Hyper Sonic</p>
+                    <p>© 2026 Lumina Studio</p>
                     <p>All Rights Reserved</p>
                 </div>
             </div>
