@@ -6,12 +6,14 @@ import Home from './pages/Home'
 import Studio from './pages/Studio'
 import Work from './pages/Work'
 import Contact from './pages/Contact'
+import ParticleBackground from './components/ParticleBackground'
 
 function App() {
     const location = useLocation()
 
     return (
-        <main className="bg-bg-deep text-white min-h-screen flex flex-col">
+        <main className="bg-bg-deep text-white min-h-screen flex flex-col relative">
+            <ParticleBackground />
             <Navbar />
 
             <div className="flex-grow pt-24">
