@@ -159,8 +159,15 @@ const ScrollSequence = ({ frameCount = 285, children }) => {
             renderFrame(currentFrameRef.current);
         };
 
+        // Debounce resize to prevent layout thrashing
+        let resizeTimeout;
+        const handleResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateSize, 100);
+        };
+
         updateSize();
-        window.addEventListener('resize', updateSize);
+        window.addEventListener('resize', handleResize);
 
         const trigger = ScrollTrigger.create({
             trigger: containerRef.current,
@@ -188,7 +195,8 @@ const ScrollSequence = ({ frameCount = 285, children }) => {
         });
 
         return () => {
-            window.removeEventListener('resize', updateSize);
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(resizeTimeout);
             if (trigger) trigger.kill();
         };
     }, [renderFrame, getFrameForProgress]);
